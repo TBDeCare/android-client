@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">TBDeCare Lab</string>
+    <string name="upload_name">TBDeCare Lab: Upload</string>
+    <string name="setting_name">TBDeCare Lab: Server Address</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="btnSave"><b>Save</b></string>
+    <string name="btnTakePicture"><b>Begin Capturing</b></string>
+    <string name="btnSetting">Server Setting</string>
+    <string name="btnExit">Exit</string>
+
+    <string name="btnUploadToServer">Upload</string>
+</resources>

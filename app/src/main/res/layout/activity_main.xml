@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.garuda45.tbdecarelab.MainActivity">
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_margin="25dp"
+        android:orientation="vertical"
+        android:layout_gravity="center"
+        android:weightSum="1">
+
+        <!-- Capture picture button -->
+
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="231dp"
+            android:layout_height="106dp"
+            android:layout_gravity="center"
+            android:src="@drawable/logo"
+            android:layout_weight="0.12" />
+
+        <Button
+            android:id="@+id/btnCapturePicture"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:layout_marginBottom="60dp"
+            android:background="@color/btn_bg"
+            android:text="@string/btnTakePicture"
+            android:textColor="@color/white" />
+        <Button
+            android:id="@+id/btnSetting"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@color/btn_bg"
+            android:text="@string/btnSetting"
+            android:textColor="@color/white" />
+        <Button
+            android:id="@+id/btnExit"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@color/btn_bg"
+            android:text="@string/btnExit"
+            android:textColor="@color/white" />
+    </LinearLayout>
+
+</RelativeLayout>
