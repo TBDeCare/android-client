@@ -1,30 +1,26 @@
 package com.garuda45.tbdecarelab;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.Menu;
-import android.view.MenuItem;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import android.app.Activity;
+
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 /**
@@ -32,19 +28,20 @@ import android.widget.Toast;
  */
 public class MainActivity extends AppCompatActivity {
 
-    // LogCat tag
+    // Log tag
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private static final int CAMERA_CAPTURE_IMAGE_REQUEST_CODE = 100;
-
-    private Uri fileUri; // file url to store image/video
-    private Button btnCapturePicture;
+    private Button btnBeginCapture;
+    private Button btnProgress;
     private Button btnSetting;
     private Button btnExit;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Permissions.verifyStoragePermissions(MainActivity.this);
+        Permissions.verifyCameraPermissions(MainActivity.this);
 
         SharedPreferences prefs = getSharedPreferences(Config.MY_PREFS_NAME, MODE_PRIVATE);
         String restoredText = prefs.getString("server", null);
@@ -62,14 +59,21 @@ public class MainActivity extends AppCompatActivity {
         
         setContentView(R.layout.activity_main);
 
-        btnCapturePicture = (Button) findViewById(R.id.btnCapturePicture);
-
-
-        btnCapturePicture.setOnClickListener(new View.OnClickListener() {
+        btnBeginCapture = (Button) findViewById(R.id.btnCapturePicture);
+        btnBeginCapture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // capture picture
-                captureImage();
+                promptPatiendIDDialog();
+            }
+        });
+
+        btnProgress = (Button) findViewById(R.id.btnProgress);
+        btnProgress.setEnabled(false);
+        btnProgress.setAlpha(0.3f);
+        btnProgress.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //launchProgressActivity();
             }
         });
 
@@ -99,6 +103,61 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void promptPatiendIDDialog() {
+        // get prompts.xml view
+        LayoutInflater li = LayoutInflater.from(this);
+        View promptsView = li.inflate(R.layout.popup_input_patient_id, null);
+
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+
+        // set prompts.xml to alertdialog builder
+        alertDialogBuilder.setView(promptsView);
+
+        final EditText editTextPatientID = (EditText) promptsView.findViewById(R.id.editTextPatientID);
+
+        // set dialog message
+        alertDialogBuilder
+                .setCancelable(false)
+                .setPositiveButton("OK",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                String patientID = editTextPatientID.getText().toString().trim();
+                                if (!patientID.equals("")) {
+                                    if (isAlphanumeric(patientID)) {
+                                        launchCameraActivity(patientID);
+                                    }
+                                    else {
+                                        Toast.makeText(MainActivity.this, "Patient ID must only contain letters and numbers (alphanumeric)!", Toast.LENGTH_LONG).show();
+                                    }
+                                }
+                                else {
+                                    Toast.makeText(MainActivity.this, "Patient ID must not be empty!", Toast.LENGTH_LONG).show();
+                                }
+                            }
+                        })
+                .setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                dialog.cancel();
+                            }
+                        });
+
+        // create alert dialog
+        AlertDialog alertDialog = alertDialogBuilder.create();
+
+        // show it
+        alertDialog.show();
+    }
+
+    public boolean isAlphanumeric(String str) {
+        for (int i=0; i<str.length(); i++) {
+            char c = str.charAt(i);
+            if (c < 0x30 || (c >= 0x3a && c <= 0x40) || (c > 0x5a && c <= 0x60) || c > 0x7a)
+                return false;
+        }
+        return true;
+    }
+
     private boolean isDeviceSupportCamera() {
         if (getApplicationContext().getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_CAMERA)) {
@@ -110,58 +169,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void captureImage() {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
-        fileUri = getOutputMediaFileUri();
-
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
-
-        // start the image capture Intent
-        startActivityForResult(intent, CAMERA_CAPTURE_IMAGE_REQUEST_CODE);
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        // save file url in bundle as it will be null on screen orientation
-        // changes
-        outState.putParcelable("file_uri", fileUri);
-    }
-
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-
-        // get the file url
-        fileUri = savedInstanceState.getParcelable("file_uri");
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK) {
-            // successfully captured the image
-            // launching upload activity
-            launchUploadActivity(true);
-        } else if (resultCode == RESULT_CANCELED) {
-
-            // user cancelled Image capture
-            Toast.makeText(getApplicationContext(),
-                    "User cancelled image capture", Toast.LENGTH_SHORT)
-                    .show();
-        } else {
-            // failed to capture image
-            Toast.makeText(getApplicationContext(),
-                    "Sorry! Failed to capture image", Toast.LENGTH_SHORT)
-                    .show();
-        }
-    }
-
-    private void launchUploadActivity(boolean isImage){
-        Intent i = new Intent(MainActivity.this, UploadActivity.class);
-        i.putExtra("filePath", fileUri.getPath());
-        i.putExtra("isImage", isImage);
+    private void launchCameraActivity(String patientID){
+        Intent i = new Intent(MainActivity.this, CameraActivity.class);
+        i.putExtra("patientID", patientID);
+        i.putExtra("counter", 1);
         startActivity(i);
     }
 
@@ -194,42 +205,5 @@ public class MainActivity extends AppCompatActivity {
 
         AlertDialog alertDialog = alertDialogBuilder.create();
         alertDialog.show();
-    }
-
-
-    public Uri getOutputMediaFileUri() {
-        return Uri.fromFile(getOutputMediaFile());
-    }
-
-
-    private static File getOutputMediaFile() {
-
-        // External sdcard location
-        File mediaStorageDir = new File(
-                Environment
-                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                Config.IMAGE_DIRECTORY_NAME);
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.d(TAG, "Oops! Failed create "
-                        + Config.IMAGE_DIRECTORY_NAME + " directory");
-                return null;
-            }
-        }
-
-        // Create a media file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",
-                Locale.getDefault()).format(new Date());
-        File mediaFile;
-        mediaFile = new File(mediaStorageDir.getPath() + File.separator
-                + "IMG_" + timeStamp + ".jpg");
-
-
-
-        Log.v(TAG, mediaFile.getAbsolutePath());
-
-        return mediaFile;
     }
 }
