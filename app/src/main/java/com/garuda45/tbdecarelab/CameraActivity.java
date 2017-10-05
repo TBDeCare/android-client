@@ -10,8 +10,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -45,6 +47,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.garuda45.tbdecarelab.Config;
+
+import net.gotev.uploadservice.MultipartUploadRequest;
+import net.gotev.uploadservice.ServerResponse;
+import net.gotev.uploadservice.UploadInfo;
+import net.gotev.uploadservice.UploadNotificationConfig;
+import net.gotev.uploadservice.UploadStatusDelegate;
 
 public class CameraActivity extends AppCompatActivity {
 
@@ -194,6 +202,7 @@ public class CameraActivity extends AppCompatActivity {
             result = (info.orientation - degrees + 360) % 360;
         }
         camera.setDisplayOrientation(result);
+        camera.setDisplayOrientation(result);
     }
 
 
@@ -274,6 +283,7 @@ public class CameraActivity extends AppCompatActivity {
 
             }
 
+            uploadMultipart(filename.getAbsolutePath());
 
             Bitmap realImage;
             final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -330,6 +340,54 @@ public class CameraActivity extends AppCompatActivity {
             }
         }
     };
+
+    public boolean uploadMultipart(String path) {
+        //Uploading code
+        try {
+            String uploadId = UUID.randomUUID().toString();
+
+            //Creating a multi part request
+            new MultipartUploadRequest(this, uploadId, Config.getFileUploadUrl())
+                    .addFileToUpload(path, "photo") //Adding file
+                    .addParameter("username", "admin") //Adding username to the request
+                    .addParameter("password", "djangoadmin") //Adding password to the request
+                    .addParameter("patient_id", patientID) //Adding password to the request
+                    .setNotificationConfig(new UploadNotificationConfig())
+                    .setMaxRetries(2)
+                    .setDelegate(new UploadStatusDelegate() {
+                        @Override
+                        public void onProgress(Context context, UploadInfo uploadInfo) {
+                            // your code here
+                        }
+
+                        @Override
+                        public void onError(Context context, UploadInfo uploadInfo, ServerResponse serverResponse,
+                                            Exception exception) {
+                            // your code here
+                        }
+
+                        @Override
+                        public void onCompleted(Context context, UploadInfo uploadInfo, ServerResponse serverResponse) {
+                            // your code here
+                            // if you have mapped your server response to a POJO, you can easily get it:
+                            // YourClass obj = new Gson().fromJson(serverResponse.getBodyAsString(), YourClass.class);
+
+                        }
+
+                        @Override
+                        public void onCancelled(Context context, UploadInfo uploadInfo) {
+                            // your code here
+                        }
+                    })
+                    .startUpload(); //Starting the upload
+
+        } catch (Exception exc) {
+            Toast.makeText(this, exc.getMessage(), Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        return true;
+    }
 
     public static Bitmap rotate(Bitmap source, float angle) {
         Matrix matrix = new Matrix();
