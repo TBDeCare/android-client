@@ -1,7 +1,6 @@
 package com.garuda45.tbdecarelab;
 
 import android.app.Application;
-
 import net.gotev.uploadservice.UploadService;
 
 /**
@@ -18,6 +17,6 @@ public class Initializer extends Application {
         // Gradle automatically generates proper variable as below.
         UploadService.NAMESPACE = BuildConfig.APPLICATION_ID;
         // Or, you can define it manually.
-        UploadService.NAMESPACE = "com.garuda45.tbdecarelab.uploadservice.broadcast.status";
+        UploadService.NAMESPACE = "com.garuda45.tbdecarelab";
     }
 }
