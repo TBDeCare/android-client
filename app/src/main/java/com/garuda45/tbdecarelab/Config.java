@@ -13,10 +13,10 @@ public class Config {
 
     public static String getFileUploadUrl() {
         if (SERVER.substring(SERVER.length()-1).equals("/")) {
-            return SERVER + "patient/lab_result/store";
+            return SERVER;
         }
         else {
-            return SERVER + "/patient/lab_result/store";
+            return SERVER;
         }
     }
 }

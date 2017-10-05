@@ -1,13 +1,14 @@
 <resources>
     <string name="app_name">TBDeCare Lab</string>
-    <string name="camera_name">TBDeCare Lab: Capture</string>
-    <string name="upload_name">TBDeCare Lab: Upload</string>
-    <string name="setting_name">TBDeCare Lab: Server Address</string>
+    <string name="camera_name">Capture</string>
+    <string name="upload_name">Upload</string>
+    <string name="setting_name">Server Address</string>
+    <string name="wip_name">List Samples</string>
     <string name="action_settings">Settings</string>
 
     <string name="btnSave"><b>Save</b></string>
     <string name="btnTakePicture"><b>Capture New Sample</b></string>
-    <string name="btnProgress"><b>Work in Progress</b></string>
+    <string name="btnProgress"><b>List Samples</b></string>
     <string name="btnSetting">Server Setting</string>
     <string name="btnExit">Exit</string>
     <string name="btnUploadToServer">Upload</string>

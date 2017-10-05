@@ -14,6 +14,7 @@ import java.util.UUID;
 
 
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -49,8 +50,11 @@ import android.widget.Toast;
 import com.garuda45.tbdecarelab.Config;
 
 import net.gotev.uploadservice.MultipartUploadRequest;
+import net.gotev.uploadservice.ServerResponse;
+import net.gotev.uploadservice.UploadInfo;
 import net.gotev.uploadservice.UploadNotificationAction;
 import net.gotev.uploadservice.UploadNotificationConfig;
+import net.gotev.uploadservice.UploadStatusDelegate;
 
 public class CameraActivity extends AppCompatActivity {
 
@@ -282,7 +286,7 @@ public class CameraActivity extends AppCompatActivity {
 
             }
 
-            uploadMultipart(filename.getAbsolutePath(), filename_no_path);
+            uploadMultipart(filename, filename_no_path);
 
             Bitmap realImage;
             final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -340,24 +344,25 @@ public class CameraActivity extends AppCompatActivity {
         }
     };
 
-    public boolean uploadMultipart(String path, String filename_no_path) {
+    public boolean uploadMultipart(final File file, String filename_no_path) {
+        String path = file.getAbsolutePath();
+
         //Uploading code
         try {
             String uploadId = UUID.randomUUID().toString();
 
             UploadNotificationConfig notificationConfig = new UploadNotificationConfig();
-            PendingIntent clickIntent = PendingIntent.getActivity(this, 1, new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
-            notificationConfig.setTitleForAllStatuses(filename_no_path)
-                    .setClickIntentForAllStatuses(clickIntent);
+            notificationConfig.setTitleForAllStatuses(filename_no_path);
+            notificationConfig.getCompleted().autoClear = true;
 
             //Creating a multi part request
             new MultipartUploadRequest(this, uploadId, Config.getFileUploadUrl())
-                    .addFileToUpload(path, "photo") //Adding file
-                    .addParameter("username", "admin") //Adding username to the request
-                    .addParameter("password", "djangoadmin") //Adding password to the request
-                    .addParameter("patient_id", patientID) //Adding password to the request
+                    .addFileToUpload(path, "photo")
+                    .setBasicAuth("admin", "tbdc-garuda45")
+                    .addParameter("patient_id", patientID)
                     .setNotificationConfig(notificationConfig)
-                    .setMaxRetries(2)
+                    .setMaxRetries(200)
+                    .setDelegate(new UploadReceiver(file, patientID, uploadId))
                     .startUpload(); //Starting the upload
 
         } catch (Exception exc) {

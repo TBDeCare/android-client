@@ -46,13 +46,13 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences(Config.MY_PREFS_NAME, MODE_PRIVATE);
         String restoredText = prefs.getString("server", null);
         if (restoredText != null) {
-            String server = prefs.getString("server", "http://tbdc.titikkoma.tech");
+            String server = prefs.getString("server", "http://tbdc.titikkoma.tech/patient/upload");
             Config.SERVER = server;
         }
         else {
             SharedPreferences.Editor editor = getSharedPreferences(Config.MY_PREFS_NAME, MODE_PRIVATE).edit();
-            editor.putString("server", "http://tbdc.titikkoma.tech");
-            String server = prefs.getString("server", "http://tbdc.titikkoma.tech");
+            editor.putString("server", "http://tbdc.titikkoma.tech/patient/upload");
+            String server = prefs.getString("server", "http://tbdc.titikkoma.tech/patient/upload");
             Config.SERVER = server;
             editor.commit();
         }
@@ -68,12 +68,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnProgress = (Button) findViewById(R.id.btnProgress);
-        btnProgress.setEnabled(false);
-        btnProgress.setAlpha(0.3f);
         btnProgress.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //launchProgressActivity();
+                launchWipActivity();
             }
         });
 
@@ -173,6 +171,11 @@ public class MainActivity extends AppCompatActivity {
         Intent i = new Intent(MainActivity.this, CameraActivity.class);
         i.putExtra("patientID", patientID);
         i.putExtra("counter", 1);
+        startActivity(i);
+    }
+
+    private void launchWipActivity(){
+        Intent i = new Intent(MainActivity.this, WorkInProgressActivity.class);
         startActivity(i);
     }
 
