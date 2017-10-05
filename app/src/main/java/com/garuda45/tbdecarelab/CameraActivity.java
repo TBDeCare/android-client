@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 
-import android.content.Context;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -49,10 +49,8 @@ import android.widget.Toast;
 import com.garuda45.tbdecarelab.Config;
 
 import net.gotev.uploadservice.MultipartUploadRequest;
-import net.gotev.uploadservice.ServerResponse;
-import net.gotev.uploadservice.UploadInfo;
+import net.gotev.uploadservice.UploadNotificationAction;
 import net.gotev.uploadservice.UploadNotificationConfig;
-import net.gotev.uploadservice.UploadStatusDelegate;
 
 public class CameraActivity extends AppCompatActivity {
 
@@ -85,9 +83,9 @@ public class CameraActivity extends AppCompatActivity {
         // Receiving the data from previous activity
         Intent i = getIntent();
         patientID = i.getStringExtra("patientID");
-        counter = i.getIntExtra("counter", 0);
+        counter = i.getIntExtra("counter", 1);
 
-        if (counter == 0) {
+        if (counter == 1) {
             timeStamp = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(new Date());
         }
         else {
@@ -266,7 +264,8 @@ public class CameraActivity extends AppCompatActivity {
                 }
             }
 
-            File filename = new File(patientDirectory, "TBDC" + "_" + patientID + "_" + counter + "_" + timeStamp + ".jpg");
+            String filename_no_path = patientID + "_" + counter + "_" + timeStamp + ".jpg";
+            File filename = new File(patientDirectory, filename_no_path);
 
             try {
                 // Write to SD Card
@@ -283,7 +282,7 @@ public class CameraActivity extends AppCompatActivity {
 
             }
 
-            uploadMultipart(filename.getAbsolutePath());
+            uploadMultipart(filename.getAbsolutePath(), filename_no_path);
 
             Bitmap realImage;
             final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -341,10 +340,15 @@ public class CameraActivity extends AppCompatActivity {
         }
     };
 
-    public boolean uploadMultipart(String path) {
+    public boolean uploadMultipart(String path, String filename_no_path) {
         //Uploading code
         try {
             String uploadId = UUID.randomUUID().toString();
+
+            UploadNotificationConfig notificationConfig = new UploadNotificationConfig();
+            PendingIntent clickIntent = PendingIntent.getActivity(this, 1, new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+            notificationConfig.setTitleForAllStatuses(filename_no_path)
+                    .setClickIntentForAllStatuses(clickIntent);
 
             //Creating a multi part request
             new MultipartUploadRequest(this, uploadId, Config.getFileUploadUrl())
@@ -352,33 +356,8 @@ public class CameraActivity extends AppCompatActivity {
                     .addParameter("username", "admin") //Adding username to the request
                     .addParameter("password", "djangoadmin") //Adding password to the request
                     .addParameter("patient_id", patientID) //Adding password to the request
-                    .setNotificationConfig(new UploadNotificationConfig())
+                    .setNotificationConfig(notificationConfig)
                     .setMaxRetries(2)
-                    .setDelegate(new UploadStatusDelegate() {
-                        @Override
-                        public void onProgress(Context context, UploadInfo uploadInfo) {
-                            // your code here
-                        }
-
-                        @Override
-                        public void onError(Context context, UploadInfo uploadInfo, ServerResponse serverResponse,
-                                            Exception exception) {
-                            // your code here
-                        }
-
-                        @Override
-                        public void onCompleted(Context context, UploadInfo uploadInfo, ServerResponse serverResponse) {
-                            // your code here
-                            // if you have mapped your server response to a POJO, you can easily get it:
-                            // YourClass obj = new Gson().fromJson(serverResponse.getBodyAsString(), YourClass.class);
-
-                        }
-
-                        @Override
-                        public void onCancelled(Context context, UploadInfo uploadInfo) {
-                            // your code here
-                        }
-                    })
                     .startUpload(); //Starting the upload
 
         } catch (Exception exc) {
