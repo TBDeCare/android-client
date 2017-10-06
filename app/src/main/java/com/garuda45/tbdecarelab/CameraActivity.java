@@ -13,8 +13,11 @@ import java.util.Locale;
 import java.util.UUID;
 
 
+import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -32,6 +35,7 @@ import android.os.Bundle;
 import android.app.Activity;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -49,20 +53,24 @@ import android.widget.Toast;
 
 import com.garuda45.tbdecarelab.Config;
 
+import net.gotev.uploadservice.Logger;
 import net.gotev.uploadservice.MultipartUploadRequest;
 import net.gotev.uploadservice.ServerResponse;
 import net.gotev.uploadservice.UploadInfo;
 import net.gotev.uploadservice.UploadNotificationAction;
 import net.gotev.uploadservice.UploadNotificationConfig;
+import net.gotev.uploadservice.UploadServiceSingleBroadcastReceiver;
 import net.gotev.uploadservice.UploadStatusDelegate;
 
-public class CameraActivity extends AppCompatActivity {
+public class CameraActivity extends AppCompatActivity implements UploadStatusDelegate {
 
     private static final String TAG = CameraActivity.class.getSimpleName();
 
+    String filename_no_path;
     String patientID;
     int counter;
     String timeStamp;
+    UploadNotificationConfig notificationConfig;
 
     TextView labelPatientID;
     TextView labelCounter;
@@ -73,9 +81,13 @@ public class CameraActivity extends AppCompatActivity {
     ImageView fotoButton;
     LinearLayout progressLayout;
 
+    private UploadServiceSingleBroadcastReceiver uploadReceiver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        uploadReceiver = new UploadServiceSingleBroadcastReceiver(this);
 
         setContentView(R.layout.activity_camera);
 
@@ -152,6 +164,7 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        uploadReceiver.register(this);
         // TODO Auto-generated method stub
         if (camera == null) {
             camera = Camera.open();
@@ -172,6 +185,12 @@ public class CameraActivity extends AppCompatActivity {
                         CameraInfo.CAMERA_FACING_BACK, camera);
             preview.setCamera(camera);
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        uploadReceiver.unregister(this);
     }
 
     private void setCameraDisplayOrientation(Activity activity, int cameraId,
@@ -268,7 +287,7 @@ public class CameraActivity extends AppCompatActivity {
                 }
             }
 
-            String filename_no_path = patientID + "_" + counter + "_" + timeStamp + ".jpg";
+            filename_no_path = patientID + "_" + counter + "_" + timeStamp + ".jpg";
             File filename = new File(patientDirectory, filename_no_path);
 
             try {
@@ -350,8 +369,9 @@ public class CameraActivity extends AppCompatActivity {
         //Uploading code
         try {
             String uploadId = UUID.randomUUID().toString();
+            uploadReceiver.setUploadID(uploadId);
 
-            UploadNotificationConfig notificationConfig = new UploadNotificationConfig();
+            notificationConfig = new UploadNotificationConfig();
             notificationConfig.setTitleForAllStatuses(filename_no_path);
             notificationConfig.getCompleted().autoClear = true;
 
@@ -361,8 +381,7 @@ public class CameraActivity extends AppCompatActivity {
                     .setBasicAuth("admin", "tbdc-garuda45")
                     .addParameter("patient_id", patientID)
                     .setNotificationConfig(notificationConfig)
-                    .setMaxRetries(200)
-                    .setDelegate(new UploadReceiver(file, patientID, uploadId))
+                    .setMaxRetries(100)
                     .startUpload(); //Starting the upload
 
         } catch (Exception exc) {
@@ -371,6 +390,49 @@ public class CameraActivity extends AppCompatActivity {
         }
 
         return true;
+    }
+
+    @Override
+    public void onProgress(Context context, UploadInfo uploadInfo) {
+        // your implementation
+    }
+
+    @Override
+    public void onError(Context context, UploadInfo uploadInfo, ServerResponse serverResponse, Exception exception) {
+        String message;
+
+        try {
+            message = serverResponse.getBodyAsString();
+        }
+        catch(Exception e) {
+            message = exception.getMessage();
+        }
+
+        Log.e(TAG, message);
+
+        // The id of the channel.
+        String CHANNEL_ID = "tbdecare_error";
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(this)
+                        .setSmallIcon(R.drawable.logo)
+                        .setContentTitle("Upload Error: " + patientID)
+                        .setContentText(message + "\n" + filename_no_path)
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(message + "\n" + filename_no_path))
+                        .setChannelId(CHANNEL_ID);
+
+        NotificationManager mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(patientID.hashCode(), mBuilder.build());
+    }
+
+    @Override
+    public void onCompleted(Context context, UploadInfo uploadInfo, ServerResponse serverResponse) {
+        Log.d(TAG, serverResponse.getBodyAsString());
+    }
+
+    @Override
+    public void onCancelled(Context context, UploadInfo uploadInfo) {
+        // your implementation
     }
 
     public static Bitmap rotate(Bitmap source, float angle) {

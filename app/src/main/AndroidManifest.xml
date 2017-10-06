@@ -17,11 +17,6 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light" >
-        <receiver android:name="UploadReceiver" android:exported="false">
-            <intent-filter>
-                <action android:name="com.garuda45.tbdecarelab.uploadservice.broadcast.status" />
-            </intent-filter>
-        </receiver>
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
