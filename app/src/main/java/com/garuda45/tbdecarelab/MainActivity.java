@@ -40,8 +40,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Permissions.verifyStoragePermissions(MainActivity.this);
-        Permissions.verifyCameraPermissions(MainActivity.this);
+        Permissions.verifyPermissions(MainActivity.this);
 
         SharedPreferences prefs = getSharedPreferences(Config.MY_PREFS_NAME, MODE_PRIVATE);
         String restoredText = prefs.getString("server", null);
@@ -98,6 +97,36 @@ public class MainActivity extends AppCompatActivity {
                     Toast.LENGTH_LONG).show();
             // will close the app if the device does't have camera
             finish();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case Permissions.REQUEST_PERMISSIONS: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0) {
+                    for (int x : grantResults) {
+                        if (x == PackageManager.PERMISSION_DENIED) {
+                            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+                            alertDialogBuilder.setTitle("Exiting Application");
+                            alertDialogBuilder
+                                    .setMessage("You cannot use any feature without granting the app permissions. Restart app to grant permissions.")
+                                    .setCancelable(false)
+                                    .setPositiveButton("OK",
+                                            new DialogInterface.OnClickListener() {
+                                                public void onClick(DialogInterface dialog, int id) {
+                                                    moveTaskToBack(true);
+                                                    android.os.Process.killProcess(android.os.Process.myPid());
+                                                    System.exit(1);
+                                                }
+                                            });
+                            AlertDialog alertDialog = alertDialogBuilder.create();
+                            alertDialog.show();
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -168,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void launchCameraActivity(String patientID){
-        Intent i = new Intent(MainActivity.this, CameraActivity.class);
+       Intent i = new Intent(MainActivity.this, CameraActivity.class);
         i.putExtra("patientID", patientID);
         i.putExtra("counter", 1);
         startActivity(i);
