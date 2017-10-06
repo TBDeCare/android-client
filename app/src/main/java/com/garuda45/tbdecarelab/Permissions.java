@@ -23,7 +23,8 @@ public class Permissions {
     public static String[] PERMISSIONS = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.CAMERA
+            Manifest.permission.CAMERA,
+            Manifest.permission.INTERNET
     };
 
     public static void verifyPermissions(Activity activity) {
