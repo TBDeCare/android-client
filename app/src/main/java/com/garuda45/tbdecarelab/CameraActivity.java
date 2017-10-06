@@ -66,6 +66,7 @@ public class CameraActivity extends AppCompatActivity implements UploadStatusDel
 
     private static final String TAG = CameraActivity.class.getSimpleName();
 
+    String filename_no_path;
     String patientID;
     int counter;
     String timeStamp;
@@ -286,7 +287,7 @@ public class CameraActivity extends AppCompatActivity implements UploadStatusDel
                 }
             }
 
-            String filename_no_path = patientID + "_" + counter + "_" + timeStamp + ".jpg";
+            filename_no_path = patientID + "_" + counter + "_" + timeStamp + ".jpg";
             File filename = new File(patientDirectory, filename_no_path);
 
             try {
@@ -415,8 +416,8 @@ public class CameraActivity extends AppCompatActivity implements UploadStatusDel
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.logo)
                         .setContentTitle("Upload Error: " + patientID)
-                        .setContentText(message)
-                        .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                        .setContentText(message + "\n" + filename_no_path)
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(message + "\n" + filename_no_path))
                         .setChannelId(CHANNEL_ID);
 
         NotificationManager mNotificationManager =
