@@ -11,6 +11,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -45,13 +46,13 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences(Config.MY_PREFS_NAME, MODE_PRIVATE);
         String restoredText = prefs.getString("server", null);
         if (restoredText != null) {
-            String server = prefs.getString("server", "http://tbdc.titikkoma.tech/patient/upload");
+            String server = prefs.getString("server", "http://tbdc.garuda45.org/patient/upload");
             Config.SERVER = server;
         }
         else {
             SharedPreferences.Editor editor = getSharedPreferences(Config.MY_PREFS_NAME, MODE_PRIVATE).edit();
-            editor.putString("server", "http://tbdc.titikkoma.tech/patient/upload");
-            String server = prefs.getString("server", "http://tbdc.titikkoma.tech/patient/upload");
+            editor.putString("server", "http://tbdc.garuda45.org/patient/upload");
+            String server = prefs.getString("server", "http://tbdc.garuda45.org/patient/upload");
             Config.SERVER = server;
             editor.commit();
         }
@@ -150,11 +151,11 @@ public class MainActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialog,int id) {
                                 String patientID = editTextPatientID.getText().toString().trim();
                                 if (!patientID.equals("")) {
-                                    if (isAlphanumeric(patientID)) {
+                                    if (isAllowed(patientID)) {
                                         launchCameraActivity(patientID);
                                     }
                                     else {
-                                        Toast.makeText(MainActivity.this, "Patient ID must only contain letters and numbers (alphanumeric)!", Toast.LENGTH_LONG).show();
+                                        Toast.makeText(MainActivity.this, "Patient ID must only contain letters, numbers, - or _!", Toast.LENGTH_LONG).show();
                                     }
                                 }
                                 else {
@@ -174,6 +175,13 @@ public class MainActivity extends AppCompatActivity {
 
         // show it
         alertDialog.show();
+    }
+
+    public boolean isAllowed(String str) {
+        String regex = "^[a-zA-Z0-9_-]*$";
+        boolean result = str.matches(regex);
+
+        return result;
     }
 
     public boolean isAlphanumeric(String str) {
@@ -214,6 +222,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void launchExit() {
+        Intent i = new Intent(Intent.ACTION_MAIN);
+        i.addCategory(Intent.CATEGORY_HOME);
+        startActivity(i);
+        /*
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         alertDialogBuilder.setTitle("Exit Application?");
         alertDialogBuilder
@@ -237,5 +249,6 @@ public class MainActivity extends AppCompatActivity {
 
         AlertDialog alertDialog = alertDialogBuilder.create();
         alertDialog.show();
+        */
     }
 }

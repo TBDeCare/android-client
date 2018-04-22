@@ -1,20 +1,17 @@
 package com.garuda45.tbdecarelab;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.Toast;
 
-import com.garuda45.tbdecarelab.wiplist.WipListAdapter;
+import com.garuda45.tbdecarelab.listadapter.WipListAdapter;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 /**
  * Created by mure on 10/5/2017.
@@ -44,6 +41,16 @@ public class WorkInProgressActivity extends AppCompatActivity {
                 list.add(new String[]{inFile.getName(), subtitle});
             }
         }
+
+        if (list.size() == 0) {
+            list.add(new String[]{"Empty", "Empty"});
+        }
+
+        Collections.sort(list, new Comparator<String[]>() {
+            public int compare(String[] strings, String[] otherString) {
+                return strings[0].compareTo(otherString[0]);
+            }
+        });
 
         //instantiate custom adapter
         WipListAdapter adapter = new WipListAdapter(list, this);

@@ -5,25 +5,15 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 
 
-import android.app.AlertDialog;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
-import android.graphics.Rect;
-import android.graphics.RectF;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.ErrorCallback;
@@ -35,42 +25,28 @@ import android.os.Bundle;
 import android.app.Activity;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.garuda45.tbdecarelab.Config;
+import com.garuda45.tbdecarelab.broadcastreceiver.MyReceiver;
 
-import net.gotev.uploadservice.Logger;
-import net.gotev.uploadservice.MultipartUploadRequest;
-import net.gotev.uploadservice.ServerResponse;
-import net.gotev.uploadservice.UploadInfo;
-import net.gotev.uploadservice.UploadNotificationAction;
-import net.gotev.uploadservice.UploadNotificationConfig;
-import net.gotev.uploadservice.UploadServiceSingleBroadcastReceiver;
-import net.gotev.uploadservice.UploadStatusDelegate;
-
-public class CameraActivity extends AppCompatActivity implements UploadStatusDelegate {
+public class CameraActivity extends AppCompatActivity {
 
     private static final String TAG = CameraActivity.class.getSimpleName();
 
-    String filename_no_path;
+    String filenameNoPath;
     String patientID;
-    int counter;
+    public static int counter;
     String timeStamp;
-    UploadNotificationConfig notificationConfig;
 
     TextView labelPatientID;
     TextView labelCounter;
@@ -81,13 +57,9 @@ public class CameraActivity extends AppCompatActivity implements UploadStatusDel
     ImageView fotoButton;
     LinearLayout progressLayout;
 
-    private UploadServiceSingleBroadcastReceiver uploadReceiver;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        uploadReceiver = new UploadServiceSingleBroadcastReceiver(this);
 
         setContentView(R.layout.activity_camera);
 
@@ -164,7 +136,6 @@ public class CameraActivity extends AppCompatActivity implements UploadStatusDel
     @Override
     protected void onResume() {
         super.onResume();
-        uploadReceiver.register(this);
         // TODO Auto-generated method stub
         if (camera == null) {
             camera = Camera.open();
@@ -190,7 +161,6 @@ public class CameraActivity extends AppCompatActivity implements UploadStatusDel
     @Override
     protected void onPause() {
         super.onPause();
-        uploadReceiver.unregister(this);
     }
 
     private void setCameraDisplayOrientation(Activity activity, int cameraId,
@@ -287,25 +257,29 @@ public class CameraActivity extends AppCompatActivity implements UploadStatusDel
                 }
             }
 
-            filename_no_path = patientID + "_" + counter + "_" + timeStamp + ".jpg";
-            File filename = new File(patientDirectory, filename_no_path);
-
+            filenameNoPath = patientID + "_" + counter + "_" + timeStamp + ".jpg";
+            File filename = new File(patientDirectory, filenameNoPath);
             try {
                 // Write to SD Card
                 outStream = new FileOutputStream(filename);
                 outStream.write(data);
                 outStream.close();
-
-
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
+                return;
             } catch (IOException e) {
                 e.printStackTrace();
+                return;
             } finally {
-
             }
 
-            uploadMultipart(filename, filename_no_path);
+            try {
+                MyReceiver.uploader = new Uploader(patientDirectory, context, filename, filenameNoPath, patientID);
+                MyReceiver.uploader.uploadMultipart();
+            }
+            catch (Exception e) {
+                Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
 
             Bitmap realImage;
             final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -362,78 +336,6 @@ public class CameraActivity extends AppCompatActivity implements UploadStatusDel
             }
         }
     };
-
-    public boolean uploadMultipart(final File file, String filename_no_path) {
-        String path = file.getAbsolutePath();
-
-        //Uploading code
-        try {
-            String uploadId = UUID.randomUUID().toString();
-            uploadReceiver.setUploadID(uploadId);
-
-            notificationConfig = new UploadNotificationConfig();
-            notificationConfig.setTitleForAllStatuses(filename_no_path);
-            notificationConfig.getCompleted().autoClear = true;
-
-            //Creating a multi part request
-            new MultipartUploadRequest(this, uploadId, Config.getFileUploadUrl())
-                    .addFileToUpload(path, "photo")
-                    .setBasicAuth("admin", "tbdc-garuda45")
-                    .addParameter("patient_id", patientID)
-                    .setNotificationConfig(notificationConfig)
-                    .setMaxRetries(100)
-                    .startUpload(); //Starting the upload
-
-        } catch (Exception exc) {
-            Toast.makeText(this, exc.getMessage(), Toast.LENGTH_SHORT).show();
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public void onProgress(Context context, UploadInfo uploadInfo) {
-        // your implementation
-    }
-
-    @Override
-    public void onError(Context context, UploadInfo uploadInfo, ServerResponse serverResponse, Exception exception) {
-        String message;
-
-        try {
-            message = serverResponse.getBodyAsString();
-        }
-        catch(Exception e) {
-            message = exception.getMessage();
-        }
-
-        Log.e(TAG, message);
-
-        // The id of the channel.
-        String CHANNEL_ID = "tbdecare_error";
-        NotificationCompat.Builder mBuilder =
-                new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.drawable.logo)
-                        .setContentTitle("Upload Error: " + patientID)
-                        .setContentText(message + "\n" + filename_no_path)
-                        .setStyle(new NotificationCompat.BigTextStyle().bigText(message + "\n" + filename_no_path))
-                        .setChannelId(CHANNEL_ID);
-
-        NotificationManager mNotificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.notify(patientID.hashCode(), mBuilder.build());
-    }
-
-    @Override
-    public void onCompleted(Context context, UploadInfo uploadInfo, ServerResponse serverResponse) {
-        Log.d(TAG, serverResponse.getBodyAsString());
-    }
-
-    @Override
-    public void onCancelled(Context context, UploadInfo uploadInfo) {
-        // your implementation
-    }
 
     public static Bitmap rotate(Bitmap source, float angle) {
         Matrix matrix = new Matrix();
